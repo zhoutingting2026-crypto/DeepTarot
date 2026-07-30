@@ -143,7 +143,7 @@ html, body {
 
 .nav-row {
   display: flex; align-items: center; justify-content: space-between;
-  padding: max(52px, env(safe-area-inset-top)) 20px 16px;
+  padding: max(26px, env(safe-area-inset-top)) 20px 16px;
   flex-shrink: 0;
 }
 .back-btn {
@@ -238,7 +238,7 @@ html, body {
   color: var(--text); font-size: 16px; resize: none; line-height: 1.6;
   font-family: 'Noto Sans SC', sans-serif;
 }
-.q-area::placeholder { color: var(--muted); opacity: .6; }
+.q-area::placeholder { color: var(--muted); opacity: .6; font-size: 13px; }
 
 /* ========= PAGE 2 (DRAW) ========= */
 #p2 { padding: 0; }
@@ -429,7 +429,8 @@ html, body {
 }
 .chat-msgs::-webkit-scrollbar { display: none; }
 
-.msg-row { display: flex; gap: 9px; margin-bottom: 14px; }
+.msg-row { display: flex; gap: 9px; margin-bottom: 14px; align-items: flex-start; }
+.msg-row > div:nth-child(2) { min-width: 0; flex: 1; }
 .ai-av {
   width: 30px; height: 30px; border-radius: 50%; flex-shrink: 0;
   background: var(--ai-av) center/cover no-repeat;
@@ -439,12 +440,16 @@ html, body {
   background: var(--bg-secondary); border: 1px solid var(--card-border);
   border-radius: 16px 16px 16px 4px; padding: 11px 14px;
   font-size: 13px; line-height: 1.65; color: var(--text); max-width: 82%;
+  overflow-wrap: break-word; word-break: break-word; box-sizing: border-box;
+  display: inline-block; min-height: 44px;
 }
 .bub-user {
   background: linear-gradient(135deg, #9B7040, #C9A96E);
   border-radius: 16px 16px 4px 16px; padding: 11px 14px;
   font-size: 13px; line-height: 1.65; color: #fff; max-width: 82%;
   margin-left: auto;
+  overflow-wrap: break-word; word-break: break-word; box-sizing: border-box;
+  display: inline-block; min-height: 44px;
 }
 
 .chat-bar {
@@ -463,7 +468,7 @@ html, body {
 }
 .chat-inner input::placeholder { color: var(--muted); opacity: .6; }
 .send-btn {
-  width: 34px; height: 34px; border-radius: 50%; border: none; cursor: pointer;
+  width: 34px; height: 34px; flex-shrink: 0; border-radius: 50%; border: none; cursor: pointer; padding: 0; line-height: 1;
   background: linear-gradient(135deg, var(--gold), var(--gold-bright));
   color: #1A1040; font-size: 15px; display: flex; align-items: center; justify-content: center;
 }
@@ -560,7 +565,7 @@ html, body {
     <div style="height:14px;flex-shrink:0;"></div>
     <div class="sec-label"><span>✦</span>冥想问题</div>
     <div class="glass" style="padding:12px 15px;">
-      <textarea class="q-area" id="qInput" rows="3" placeholder="写下你心中的疑问，或点击下方挑选一个问题…" oninput="updateStartBtn()"></textarea>
+      <textarea class="q-area" id="qInput" rows="3" placeholder="写下你心中的疑问，或点击下方挑选一个问题..." oninput="updateStartBtn()"></textarea>
     </div>
 
     <div style="height:10px;flex-shrink:0;"></div>
@@ -1328,12 +1333,17 @@ ${cardLines}
   // 优先走阿里云百炼「应用」智能体（更长、更贴牌义、知识库加持）；失败再回退 Coze → DeepSeek
   if(bailianEnabled()){
     const bPrompt = `【用户的问题】\n${q || '（用户未填写具体问题，请基于牌阵做通用但依然深入的心灵指引）'}\n\n【牌阵类型】${spreadName}\n\n【抽到的牌（含正/逆位与牌义素材）】\n${cardLines}\n\n请严格只返回一个 JSON 对象（不要任何额外文字、不要 markdown 代码块、不要解释），结构为：\n{"overview":"...","keywords":["..."],"deep":"...","advice":"..."}\n\n要求：① 全程紧扣用户问题；② 逐张结合正位/逆位与过去/现在/未来牌位；③ 四块内容互不重复且都写充实；④ 单张时尤其充分展开（overview 至少 6 句、deep 至少 4 段覆盖多维度、advice 至少 180 字）。`;
-    try{
-      const { text } = await callBailian(bPrompt, '');
-      const data = parseJSONSafe(text);
-      if(data && data.overview && data.deep && Array.isArray(data.keywords) && data.advice){ lastBackend='bailian'; return data; }
-      console.warn('百炼返回结构不符合预期，回退');
-    }catch(e){ console.warn('百炼解读失败，回退：', e); }
+    let bailianData = null;
+    for(let attempt=0; attempt<2 && !bailianData; attempt++){
+      try{
+        const { text } = await callBailian(bPrompt, '');
+        const data = parseJSONSafe(text);
+        if(data && data.overview && data.deep && Array.isArray(data.keywords) && data.advice){ bailianData = data; }
+        else if(attempt===0){ console.warn('百炼返回结构不符合预期，1 秒后重试'); await new Promise(r=>setTimeout(r,1000)); }
+      }catch(e){ if(attempt===0){ console.warn('百炼第 1 次失败，1 秒后重试：', e); await new Promise(r=>setTimeout(r,1000)); } }
+    }
+    if(bailianData){ lastBackend='bailian'; return bailianData; }
+    console.warn('百炼解读失败，回退 DeepSeek');
   }
 
   // 其次走 Coze 智能体
@@ -1599,20 +1609,20 @@ async function sendMsg(){
   if(aiEnabled()){
     // 先放一个占位气泡
     const phId = 'ph'+Date.now();
-    c.innerHTML+=`<div class="msg-row" id="${phId}"><div class="ai-av"></div><div><div class="bub-ai" style="color:var(--muted);">✦ 正在思考…</div><div class="bub-meta" id="${phId}_m"></div></div></div>`;
+    c.innerHTML+=`<div class="msg-row" id="${phId}"><div class="ai-av"></div><div><div class="bub-ai" style="color:var(--muted);">正在思考…</div><div class="bub-meta" id="${phId}_m"></div></div></div>`;
     c.scrollTop=c.scrollHeight;
     try{
       const reply = await genChatReply();
       chatLog.push({role:'assistant', content: reply});
       const ph=document.getElementById(phId);
-      if(ph){ ph.querySelector('.bub-ai').innerHTML = aiTextToHtml(reply); const m=document.getElementById(phId+'_m'); if(m) m.textContent = bkLabel(lastChatBackend); }
+      if(ph){ const bai=ph.querySelector('.bub-ai'); bai.innerHTML = aiTextToHtml(reply); bai.removeAttribute('style'); const m=document.getElementById(phId+'_m'); if(m) m.textContent = bkLabel(lastChatBackend); }
       c.scrollTop=c.scrollHeight;
     }catch(e){
       const fb = generateChatResponse(msg);
       lastChatBackend='local';
       chatLog.push({role:'assistant', content: fb});
       const ph=document.getElementById(phId);
-      if(ph){ ph.querySelector('.bub-ai').innerHTML = fb; const m=document.getElementById(phId+'_m'); if(m) m.textContent = bkLabel(lastChatBackend); }
+      if(ph){ const bai=ph.querySelector('.bub-ai'); bai.innerHTML = fb; bai.removeAttribute('style'); const m=document.getElementById(phId+'_m'); if(m) m.textContent = bkLabel(lastChatBackend); }
       c.scrollTop=c.scrollHeight;
     }
   } else {
@@ -1647,21 +1657,26 @@ async function genChatReply(){
   const lastUser = [...chatLog].reverse().find(m=>m.role==='user');
   // 1) 优先走阿里云百炼「应用」智能体（自带多轮会话记忆，更连贯）
   if(bailianEnabled() && lastUser){
-    try{
-      // 智能体默认被配置成"返回 JSON（用于解读）"，但深度交流需要自然语言，
-      // 因此在每次聊天 prompt 末尾强制要求用纯文本段落回复。
-      const chatInstr = '\n\n【回答格式要求】请用自然、共情、连贯的中文段落直接回答用户的追问（不要返回 JSON，不要 markdown 代码块，不要任何结构符号），像一位懂塔罗的心理陪伴者一样说话。';
-      let prompt;
-      if(!bailianChatSid){
-        const ctx = buildReadingContext();
-        prompt = (ctx ? ctx + '\n\n' : '') + '【用户现在问你】' + lastUser.content + chatInstr;
-      } else {
-        prompt = lastUser.content + chatInstr;
-      }
-      const { text, sessionId } = await callBailian(prompt, bailianChatSid);
-      if(sessionId) bailianChatSid = sessionId;
-      if(text){ lastChatBackend='bailian'; return chatTextNormalize(text); }
-    }catch(e){ console.warn('百炼聊天失败，回退：', e); }
+    // 智能体默认被配置成"返回 JSON（用于解读）"，但深度交流需要自然语言，
+    // 因此在每次聊天 prompt 末尾强制要求用纯文本段落回复。
+    const chatInstr = '\n\n【回答格式要求】请用自然、共情、连贯的中文段落直接回答用户的追问（不要返回 JSON，不要 markdown 代码块，不要任何结构符号），像一位懂塔罗的心理陪伴者一样说话。';
+    let prompt;
+    if(!bailianChatSid){
+      const ctx = buildReadingContext();
+      prompt = (ctx ? ctx + '\n\n' : '') + '【用户现在问你】' + lastUser.content + chatInstr;
+    } else {
+      prompt = lastUser.content + chatInstr;
+    }
+    let bailianReply = null;
+    for(let attempt=0; attempt<2 && !bailianReply; attempt++){
+      try{
+        const { text, sessionId } = await callBailian(prompt, bailianChatSid);
+        if(sessionId) bailianChatSid = sessionId;
+        if(text){ bailianReply = chatTextNormalize(text); break; }
+      }catch(e){ if(attempt===0){ console.warn('百炼聊天第 1 次失败，1 秒后重试：', e); await new Promise(r=>setTimeout(r,1000)); } }
+    }
+    if(bailianReply){ lastChatBackend='bailian'; return bailianReply; }
+    console.warn('百炼聊天失败，回退');
   }
   // 2) 其次走 Coze 智能体
   if(cozeEnabled() && lastUser){
