@@ -16,13 +16,42 @@ const DASHSCOPE = (process.env.DASHSCOPE_BASE || 'https://dashscope.aliyuncs.com
 const PORT = process.env.PORT || 3000;
 const FILE = path.join(__dirname, 'output.html');
 
+// ---- 访问/提问日志（仅记录时间、IP、用户问题，不记录任何密钥） ----
+function ts() { return new Date().toISOString(); }
+function clientIP(req) {
+  return (req.headers['x-forwarded-for'] || '').split(',')[0].trim()
+      || req.socket.remoteAddress || 'unknown';
+}
+function extractQuestion(prompt) {
+  if (!prompt) return '(空)';
+  let q = null;
+  const m1 = prompt.match(/【用户的问题】\s*\n([\s\S]*?)\n\s*\n【牌阵类型】/);
+  if (m1) q = m1[1].trim();
+  const m2 = prompt.match(/【用户现在问你】([\s\S]*?)(?:【回答格式要求】)/);
+  if (!q && m2) q = m2[1].trim();
+  q = q || prompt;
+  // 兜底：去掉可能附带的格式指令文字
+  const cut = q.indexOf('【回答格式要求】');
+  if (cut !== -1) q = q.slice(0, cut).trim();
+  return q.length > 300 ? q.slice(0, 300) + '…' : q;
+}
+
 const server = http.createServer((req, res) => {
+  // 0) 记录页面访问（仅 GET 首页/资源时打一行）
+  if (req.method === 'GET') {
+    console.log('[访问] ' + ts() + ' ' + clientIP(req) + ' ' + req.url);
+  }
   // 1) 百炼应用 API 代理：/bailian/apps/{app_id}/completion
   const m = req.url.match(/^\/bailian\/apps\/([^/]+)\/completion/);
   if (m && req.method === 'POST') {
     let body = '';
     req.on('data', d => { body += d; });
     req.on('end', () => {
+      // 记录访客实际提出的问题
+      let promptText = '';
+      try { const j = JSON.parse(body); promptText = (j.input && j.input.prompt) || ''; } catch (e) {}
+      console.log('[提问] ' + ts() + ' ' + clientIP(req));
+      console.log('       ' + extractQuestion(promptText));
       const target = DASHSCOPE + '/api/v1/apps/' + encodeURIComponent(m[1]) + '/completion';
       const headers = {
         'Content-Type': 'application/json',
