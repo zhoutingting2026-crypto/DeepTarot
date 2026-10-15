@@ -1,0 +1,41 @@
+.question-shell { position:relative; }
+.q-area { font-size:15px; }
+.question-suggestions { margin-top:8px; border-top:1px solid var(--card-border); padding-top:8px; }
+.question-suggestions[hidden] { display:none; }
+.question-suggestions p { margin:0 0 7px; color:var(--gold); font-size:12px; }
+.phone.light .question-suggestions p { color:var(--gold-bright); }
+.question-suggestions button.qq-item { display:block; width:100%; text-align:left; min-height:0; padding:9px 14px; margin-bottom:4px; font-family:inherit; font-weight:inherit; line-height:1.6; }
+.question-suggestions button:focus-visible { outline:2px solid var(--gold); outline-offset:1px; }
+html.reading-busy,html.reading-busy body,html.reading-busy .phone,html.reading-busy .page { overflow:hidden!important; overscroll-behavior:none; }
+.reading-dialog { position:fixed; inset:0; box-sizing:border-box; width:100vw; max-width:none; height:100%; height:100dvh; max-height:none; margin:0; border:0; padding:24px; background:transparent; color:#f1e9db; text-align:center; overflow:hidden; touch-action:none; }
+.reading-dialog[open] { display:flex; flex-direction:column; align-items:center; justify-content:center; }
+.reading-dialog::backdrop { background:rgba(10,14,39,.64); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); animation:reading-backdrop-in .55s ease both; }
+.reading-dialog[open] { animation:reading-arrive .55s ease both; }
+.reading-dialog.is-leaving { animation:reading-depart .45s ease both; }
+.reading-dialog.is-leaving::backdrop { animation:reading-backdrop-out .45s ease both; }
+.reading-dialog h2,.reading-dialog #readingStatus { font-family:'Playfair Display','Noto Serif SC','Songti SC','SimSun',serif; font-style:italic; font-weight:400; text-shadow:0 2px 16px #0a0e27; }
+.reading-dialog h2 { font-size:21px; letter-spacing:4px; margin:12px 0 14px; }
+.reading-dialog p { color:#c2b7ce; font-size:14px; line-height:1.8; margin:6px 0; }
+.crystal-scene { position:relative; width:145px; height:145px; flex-shrink:0; isolation:isolate; }
+.crystal-scene::before { content:''; position:absolute; inset:-26px; z-index:-1; border-radius:50%; background:radial-gradient(ellipse,#bba0db55 0%,#a991d02a 38%,transparent 70%); animation:crystal-aura 3.8s ease-in-out infinite; pointer-events:none; }
+.crystal-ball { display:block; width:100%; height:100%; object-fit:contain; animation:crystal-breathe 3.8s ease-in-out infinite; transform-origin:center 65%; }
+@keyframes crystal-breathe { 0%,100% { transform:translateY(1px) scale(.98); } 50% { transform:translateY(-3px) scale(1.025); } }
+@keyframes crystal-aura { 0%,100% { opacity:.25; transform:scale(.86); } 50% { opacity:1; transform:scale(1.16); } }
+.theme-btn svg { width:21px; height:21px; display:block; color:var(--gold-bright); }
+.reading-progress { width:min(190px,65vw); height:8px; border-radius:8px; background:#ffffff18; overflow:hidden; margin:22px 0 12px; }
+.reading-progress-fill { height:100%; width:100%; transform:scaleX(0); transform-origin:left; background:linear-gradient(90deg,#9576c0,#e4cb91); transition:transform .6s ease; }
+.reading-dialog .reading-percent { color:#e4cb91; font-size:16px; font-variant-numeric:tabular-nums; }
+@keyframes reading-arrive { from { opacity:0; transform:translateY(10px) scale(.98); } to { opacity:1; transform:none; } }
+@keyframes reading-depart { to { opacity:0; transform:translateY(-6px); } }
+@keyframes reading-backdrop-in { from { background:rgba(10,14,39,0); backdrop-filter:blur(0); } to { background:rgba(10,14,39,.64); backdrop-filter:blur(12px); } }
+@keyframes reading-backdrop-out { to { background:rgba(10,14,39,0); backdrop-filter:blur(0); } }
+@media(prefers-reduced-motion:reduce) { .crystal-ball,.crystal-scene::before,.reading-dialog[open],.reading-dialog::backdrop { animation:none; } .reading-progress-fill { transition:none; } }
+@media(max-height:500px) { .crystal-scene { width:120px; height:120px; } .reading-dialog h2 { margin:4px 0; } .reading-progress { margin-top:12px; } }
+.d-card::before,.slot-back::before { display:none; }
+.d-card::after,.slot-back::after,.phone.light .d-card::after,.phone.light .slot-back::after {
+  inset:0; width:100%; height:100%; border:0; border-radius:inherit; transform:none; background:var(--tarot-back-image) center/100% 100% no-repeat; opacity:1;
+}
+.d-card.flying { box-shadow:0 10px 22px #0006; }
+.slot-box.card-arrive { animation:card-settle .42s ease-out; }
+@keyframes card-settle { 0% { transform:translateY(-5px) scale(1.04); } 65% { transform:translateY(1px) scale(.99); } 100% { transform:none; } }
+@media(prefers-reduced-motion:reduce) { .slot-box.card-arrive,.slot-box.flip { animation:none; } }

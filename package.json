@@ -1,10 +1,10 @@
 {
   "name": "deeptarot-bailian",
   "version": "1.0.0",
-  "description": "DeepTarot 塔罗站 + 阿里云百炼智能体代理（密钥仅存服务端）",
+  "description": "DeepTarot 塔罗站，百炼优先、DeepSeek 回退，密钥仅在服务端",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
   },
-  "engines": { "node": ">=16" }
+  "engines": { "node": "22.x" }
 }
